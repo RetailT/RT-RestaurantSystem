@@ -5,11 +5,13 @@ module.exports = {
     extend: {
       colors: {
         rt: {
-          black: '#140D08',
-          charcoal: '#1F150D',
-          card: '#2A1B10',
-          cardhover: '#3A2414',
-          border: '#4A2E16',
+          bg: '#FFFBF7',
+          surface: '#FFFFFF',
+          surfacealt: '#FFF3E6',
+          surfacehover: '#FFE8D1',
+          border: '#F0DCC7',
+          text: '#241708',
+          muted: '#8C6A52',
           orange: {
             50: '#FFF4EB',
             100: '#FFE3CC',
@@ -29,11 +31,12 @@ module.exports = {
         body: ['"Inter"', 'system-ui', 'sans-serif']
       },
       boxShadow: {
-        glow: '0 0 25px -5px rgba(255, 106, 0, 0.45)',
-        panel: '0 10px 30px -10px rgba(0,0,0,0.6)'
+        glow: '0 8px 20px -4px rgba(255, 106, 0, 0.35)',
+        panel: '0 8px 24px -8px rgba(36, 23, 8, 0.12)',
+        card: '0 2px 10px -2px rgba(36, 23, 8, 0.08)'
       },
       backgroundImage: {
-        'rt-radial': 'radial-gradient(circle at 20% 0%, rgba(255,106,0,0.18), transparent 45%), radial-gradient(circle at 100% 100%, rgba(255,106,0,0.10), transparent 50%)'
+        'rt-radial': 'radial-gradient(circle at 15% -10%, rgba(255,106,0,0.10), transparent 40%), radial-gradient(circle at 100% 10%, rgba(255,106,0,0.07), transparent 45%)'
       }
     }
   },
