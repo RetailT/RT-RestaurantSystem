@@ -11,10 +11,10 @@ export default function CategoryGrid({ categories, onSelect, loading }) {
         <button
           key={cat.id}
           onClick={() => onSelect(cat)}
-          className="rounded-2xl bg-rt-card hover:bg-rt-cardhover border border-rt-border hover:border-rt-orange-500/60 px-5 py-8 text-left transition shadow-panel"
+          className="rounded-2xl bg-white hover:bg-rt-surfacealt border border-rt-border hover:border-rt-orange-400 px-5 py-8 text-left transition shadow-card hover:shadow-panel"
         >
-          <span className="block font-display font-semibold text-lg text-white">{cat.name}</span>
-          <span className="block text-xs text-rt-orange-200/50 mt-1">Tap to view items</span>
+          <span className="block font-display font-semibold text-lg text-rt-text">{cat.name}</span>
+          <span className="block text-xs text-rt-orange-600/60 mt-1">Tap to view items</span>
         </button>
       ))}
     </div>

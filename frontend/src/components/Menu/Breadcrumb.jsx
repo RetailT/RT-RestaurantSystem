@@ -6,18 +6,18 @@ export default function Breadcrumb({ department, category, onGoHome, onGoDepartm
       <button
         onClick={onGoHome}
         className={`font-semibold transition ${
-          !department ? 'text-rt-orange-500' : 'text-white/50 hover:text-rt-orange-300'
+          !department ? 'text-rt-orange-600' : 'text-rt-muted hover:text-rt-orange-600'
         }`}
       >
         Main Menu
       </button>
       {department && (
         <>
-          <span className="text-white/20">/</span>
+          <span className="text-rt-muted/40">/</span>
           <button
             onClick={onGoDepartment}
             className={`font-semibold transition ${
-              !category ? 'text-rt-orange-500' : 'text-white/50 hover:text-rt-orange-300'
+              !category ? 'text-rt-orange-600' : 'text-rt-muted hover:text-rt-orange-600'
             }`}
           >
             {department.name}
@@ -26,8 +26,8 @@ export default function Breadcrumb({ department, category, onGoHome, onGoDepartm
       )}
       {category && (
         <>
-          <span className="text-white/20">/</span>
-          <span className="text-rt-orange-500 font-semibold">{category.name}</span>
+          <span className="text-rt-muted/40">/</span>
+          <span className="text-rt-orange-600 font-semibold">{category.name}</span>
         </>
       )}
     </div>

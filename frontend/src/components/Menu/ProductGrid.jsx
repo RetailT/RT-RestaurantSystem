@@ -19,9 +19,9 @@ function ProductCard({ product, onAdd }) {
   return (
     <button
       onClick={() => onAdd(product)}
-      className="group text-left rounded-2xl overflow-hidden bg-rt-card hover:bg-rt-cardhover border border-rt-border hover:border-rt-orange-500/60 transition shadow-panel flex flex-col"
+      className="group text-left rounded-2xl overflow-hidden bg-white hover:bg-rt-surfacealt border border-rt-border hover:border-rt-orange-400 transition shadow-card hover:shadow-panel flex flex-col"
     >
-      <div className="aspect-square w-full overflow-hidden bg-rt-black/40">
+      <div className="aspect-square w-full overflow-hidden bg-rt-surfacealt">
         {product.image ? (
           <img
             src={product.image}
@@ -34,9 +34,9 @@ function ProductCard({ product, onAdd }) {
         )}
       </div>
       <div className="p-3 flex-1 flex flex-col">
-        <span className="font-semibold text-white text-sm leading-snug line-clamp-2">{product.name}</span>
+        <span className="font-semibold text-rt-text text-sm leading-snug line-clamp-2">{product.name}</span>
         <div className="mt-auto flex items-center justify-between pt-2">
-          <span className="text-rt-orange-400 font-display font-bold">Rs. {formatMoney(product.price)}</span>
+          <span className="text-rt-orange-600 font-display font-bold">Rs. {formatMoney(product.price)}</span>
           <span className="rounded-full bg-rt-orange-500 text-black text-lg font-bold w-7 h-7 flex items-center justify-center group-hover:scale-110 transition">
             +
           </span>
