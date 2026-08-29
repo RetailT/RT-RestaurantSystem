@@ -32,28 +32,40 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-rt-radial px-4">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen flex items-center justify-center bg-rt-bg px-4 overflow-hidden">
+      {/* larger grid, faded out near the center (behind the card) and visible toward the edges */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(232,93,0,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(232,93,0,0.16) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+          maskImage: 'radial-gradient(circle at 50% 40%, transparent 0%, transparent 22%, black 65%)',
+          WebkitMaskImage: 'radial-gradient(circle at 50% 40%, transparent 0%, transparent 22%, black 65%)'
+        }}
+      />
+
+      <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-3">
             <span className="text-4xl font-display font-bold tracking-wide">
-              <span className="text-white">RT</span>
+              <span className="text-rt-text">RT</span>
               <span className="text-rt-orange-500">POS</span>
             </span>
           </div>
-          <p className="text-rt-orange-200/70 text-sm tracking-widest uppercase">Restaurant Order Terminal</p>
+          <p className="text-rt-orange-600/70 text-sm tracking-widest uppercase">Restaurant Order Terminal</p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="bg-rt-charcoal/80 backdrop-blur border border-rt-border rounded-2xl shadow-panel p-8"
+          className="bg-white/95 backdrop-blur border border-rt-border rounded-2xl shadow-panel p-8"
         >
-          <h1 className="text-xl font-display font-semibold text-white mb-1">Cashier sign in</h1>
-          <p className="text-sm text-rt-orange-100/50 mb-6">
+          <h1 className="text-xl font-display font-semibold text-rt-text mb-1">Cashier sign in</h1>
+          <p className="text-sm text-rt-muted mb-6">
             Sign in with the cashier account registered on this POS.
           </p>
 
-          <label className="block text-xs font-semibold text-rt-orange-200/80 uppercase tracking-wide mb-1.5">
+          <label className="block text-xs font-semibold text-rt-orange-700/80 uppercase tracking-wide mb-1.5">
             Cashier username
           </label>
           <input
@@ -62,10 +74,10 @@ export default function LoginPage() {
             onChange={(e) => setUsername(e.target.value)}
             placeholder="e.g. cashier01"
             autoComplete="username"
-            className="w-full mb-4 rounded-lg bg-rt-black/60 border border-rt-border text-white placeholder:text-white/30 px-4 py-3 focus:border-rt-orange-500 outline-none transition"
+            className="w-full mb-4 rounded-lg bg-white border border-rt-border text-rt-text placeholder:text-rt-muted/60 px-4 py-3 focus:border-rt-orange-500 focus:ring-2 focus:ring-rt-orange-100 outline-none transition"
           />
 
-          <label className="block text-xs font-semibold text-rt-orange-200/80 uppercase tracking-wide mb-1.5">
+          <label className="block text-xs font-semibold text-rt-orange-700/80 uppercase tracking-wide mb-1.5">
             Password
           </label>
           <div className="relative mb-2">
@@ -75,19 +87,19 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               autoComplete="current-password"
-              className="w-full rounded-lg bg-rt-black/60 border border-rt-border text-white placeholder:text-white/30 px-4 py-3 pr-16 focus:border-rt-orange-500 outline-none transition"
+              className="w-full rounded-lg bg-white border border-rt-border text-rt-text placeholder:text-rt-muted/60 px-4 py-3 pr-16 focus:border-rt-orange-500 focus:ring-2 focus:ring-rt-orange-100 outline-none transition"
             />
             <button
               type="button"
               onClick={() => setShowPassword((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-rt-orange-300/70 hover:text-rt-orange-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-rt-orange-600/80 hover:text-rt-orange-600"
             >
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
 
           {error && (
-            <p className="mt-2 mb-2 text-sm text-red-400 bg-red-950/40 border border-red-900 rounded-lg px-3 py-2">
+            <p className="mt-2 mb-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -100,7 +112,7 @@ export default function LoginPage() {
             {loading ? 'Checking…' : 'Sign in'}
           </button>
 
-          <p className="mt-4 text-center text-xs text-white/30">
+          <p className="mt-4 text-center text-xs text-rt-muted/80">
             Credentials are verified against the POS cashier records.
           </p>
         </form>
