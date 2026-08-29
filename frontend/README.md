@@ -1,70 +1,86 @@
-# Getting Started with Create React App
+# RTPOS Restaurant Order — Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React (Create React App) + Tailwind frontend for the restaurant order flow
+that connects to the RTPOS system. This package is **frontend only** — point
+it at your Node.js/Express + MSSQL backend once the endpoints below are
+ready. Until then it runs fully on local mock data. Built with
+`react-scripts` + `craco` (craco is only there so Tailwind's `postcss.config.js`
+is picked up — no other build behaviour is changed).
 
-## Available Scripts
+## Run it
 
-In the project directory, you can run:
+```bash
+npm install
+npm start
+```
 
-### `npm start`
+Opens at `http://localhost:3000`. Demo login (mock mode):
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+| Username   | Password |
+|------------|----------|
+| cashier01  | 1234     |
+| cashier02  | 1234     |
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Configuration (`.env`)
 
-### `npm test`
+| Variable | Purpose |
+|---|---|
+| `REACT_APP_API_BASE_URL` | Static IP/port of the RTPOS backend API |
+| `REACT_APP_COMPANY_CODE`, `REACT_APP_UNIT_NO`, `REACT_APP_PRINTER_TYPE`, `REACT_APP_MEASUREMENT` | Shown on the order header, mirrors the POS terminal screen |
+| `REACT_APP_USE_MOCK_DATA` | `true` to run against `src/data/mockData.js` instead of the API |
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Switch `REACT_APP_USE_MOCK_DATA=false` once the backend is live — no other
+code changes are needed, the service layer already targets the real
+endpoints. Restart `npm start` after any `.env` change — CRA only reads
+`.env` at startup.
 
-### `npm run build`
+## Expected backend endpoints
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+All service files under `src/services/` document the exact contract inline.
+Summary:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+| Method & path | Purpose |
+|---|---|
+| `POST /auth/login` | Body `{ username, password }`. Check against the POS cashier table (e.g. `tb_USERS`). Returns `{ token, cashier: { cashierCode, username, name } }`. |
+| `GET /departments` | Restaurant departments configured on the POS. Returns `[{ id, code, name, icon }]`. |
+| `GET /departments/:departmentId/categories` | Categories under a department (Rice, Kottu, Beverages…). Returns `[{ id, name }]`. |
+| `GET /categories/:categoryId/products` | Products with images. Returns `[{ pCode, name, price, image }]`. |
+| `GET /tables` | Dine-in tables. Returns `[{ number, capacity, status }]`. |
+| `GET /invoices/next?unitNo=` | Next running invoice number. Returns `{ invoiceNo }`. |
+| `POST /orders` | Submits the finished order — see `orderService.js` for the full payload shape. |
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Auth: the frontend sends `Authorization: Bearer <token>` on every request once
+logged in (see `src/config/api.js`).
 
-### `npm run eject`
+## Project structure
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```
+src/
+  components/
+    Login/          — cashier sign-in screen
+    Layout/          — top header (branding, cashier, clock, sign out)
+    Menu/            — department → category → product browsing
+    Order/           — order panel: info header, line items, totals,
+                       Takeaway/Dine In toggle, table selector modal
+    Common/          — ProtectedRoute
+  context/
+    AuthContext.jsx  — cashier session
+    OrderContext.jsx — cart, order type, table, invoice no, totals
+  services/          — API calls (auth, catalog, tables, orders)
+  data/mockData.js   — demo data used when VITE_USE_MOCK_DATA=true
+  utils/format.js    — currency/date formatting, totals math
+  pages/POSPage.jsx  — combines browsing + order panel
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Notes on the flow
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Login checks the cashier against the POS cashier table.
+- Main Menu shows departments fetched from the POS.
+- Department → Categories → Products, with images on each product card.
+- Tapping a product adds it to the order panel on the right, which mirrors
+  the POS invoice screen: company code, cashier code, invoice no, date/time,
+  line-items table, and totals (Total / Discount / Net Total / Balance).
+- Takeaway / Dine In is available at every step (top of the order panel).
+  Dine In opens a table picker; occupied tables are disabled.
+- The breadcrumb (Main Menu / Department / Category) lets the cashier jump
+  back to add more products without losing the current order.
