@@ -9,7 +9,7 @@ export default function OrderTypeToggle({ orderType, tableNumber, onChoose, onOp
         className={`rounded-xl py-2.5 font-display font-semibold text-sm transition border ${
           orderType === ORDER_TYPES.TAKEAWAY
             ? 'bg-rt-orange-500 border-rt-orange-500 text-black shadow-glow'
-            : 'bg-rt-card border-rt-border text-white/70 hover:border-rt-orange-500/50'
+            : 'bg-white border-rt-border text-rt-muted hover:border-rt-orange-400'
         }`}
       >
         🥡 Takeaway
@@ -22,12 +22,12 @@ export default function OrderTypeToggle({ orderType, tableNumber, onChoose, onOp
         className={`rounded-xl py-2.5 font-display font-semibold text-sm transition border relative ${
           orderType === ORDER_TYPES.DINE_IN
             ? 'bg-rt-orange-500 border-rt-orange-500 text-black shadow-glow'
-            : 'bg-rt-card border-rt-border text-white/70 hover:border-rt-orange-500/50'
+            : 'bg-white border-rt-border text-rt-muted hover:border-rt-orange-400'
         }`}
       >
         🍽️ Dine In
         {orderType === ORDER_TYPES.DINE_IN && tableNumber && (
-          <span className="absolute -top-2 -right-2 bg-rt-black text-rt-orange-400 text-[10px] font-bold rounded-full w-6 h-6 flex items-center justify-center border border-rt-orange-500">
+          <span className="absolute -top-2 -right-2 bg-white text-rt-orange-600 text-[10px] font-bold rounded-full w-6 h-6 flex items-center justify-center border border-rt-orange-500 shadow-card">
             T{tableNumber}
           </span>
         )}

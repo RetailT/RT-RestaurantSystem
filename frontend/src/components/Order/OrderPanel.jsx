@@ -56,7 +56,7 @@ export default function OrderPanel() {
   }
 
   return (
-    <aside className="w-full lg:w-[380px] shrink-0 flex flex-col gap-3 bg-rt-charcoal/70 border border-rt-border rounded-2xl p-4 shadow-panel lg:sticky lg:top-4 lg:h-[calc(100vh-6rem)]">
+    <aside className="w-full lg:w-[380px] shrink-0 flex flex-col gap-3 bg-white border border-rt-border rounded-2xl p-4 shadow-panel lg:sticky lg:top-4 lg:h-[calc(100vh-6rem)]">
       <OrderTypeToggle
         orderType={orderType}
         tableNumber={tableNumber}
@@ -67,7 +67,7 @@ export default function OrderPanel() {
       {orderType === ORDER_TYPES.DINE_IN && (
         <button
           onClick={() => setTableModalOpen(true)}
-          className="text-xs text-left rounded-lg bg-rt-black/40 border border-rt-border px-3 py-2 text-rt-orange-200/70 hover:border-rt-orange-500/60"
+          className="text-xs text-left rounded-lg bg-rt-surfacealt/60 border border-rt-border px-3 py-2 text-rt-orange-700/80 hover:border-rt-orange-400"
         >
           {tableNumber ? `Table ${tableNumber} selected — tap to change` : 'Tap to choose a table'}
         </button>
@@ -80,7 +80,7 @@ export default function OrderPanel() {
       <OrderSummary totals={totals} noOfProducts={items.length} noOfPieces={noOfPieces} />
 
       {feedback && (
-        <p className="text-xs text-center text-rt-orange-300 bg-rt-black/40 border border-rt-border rounded-lg py-2">
+        <p className="text-xs text-center text-rt-orange-700 bg-rt-orange-50 border border-rt-orange-200 rounded-lg py-2">
           {feedback}
         </p>
       )}

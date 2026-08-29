@@ -26,11 +26,11 @@ export default function OrderInfoHeader() {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-2 bg-rt-black/40 border border-rt-border rounded-xl px-4 py-3">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-2 bg-rt-surfacealt/60 border border-rt-border rounded-xl px-4 py-3">
       {fields.map(([label, value]) => (
         <div key={label} className="flex items-center justify-between gap-2 text-xs">
-          <span className="text-rt-orange-200/50 uppercase tracking-wide">{label}</span>
-          <span className="text-white font-mono font-semibold truncate">{value}</span>
+          <span className="text-rt-orange-600/60 uppercase tracking-wide">{label}</span>
+          <span className="text-rt-text font-mono font-semibold truncate">{value}</span>
         </div>
       ))}
     </div>

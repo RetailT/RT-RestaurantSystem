@@ -17,16 +17,16 @@ export default function TableSelectorModal({ open, currentTable, onSelect, onClo
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-rt-charcoal border border-rt-border rounded-2xl shadow-panel p-6"
+        className="w-full max-w-lg bg-white border border-rt-border rounded-2xl shadow-panel p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display font-semibold text-lg text-white">Select a table</h2>
-          <button onClick={onClose} className="text-white/40 hover:text-white text-xl leading-none">
+          <h2 className="font-display font-semibold text-lg text-rt-text">Select a table</h2>
+          <button onClick={onClose} className="text-rt-muted hover:text-rt-text text-xl leading-none">
             ✕
           </button>
         </div>
@@ -34,7 +34,7 @@ export default function TableSelectorModal({ open, currentTable, onSelect, onClo
         {loading ? (
           <div className="grid grid-cols-4 gap-3">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-xl bg-rt-card/60 animate-pulse" />
+              <div key={i} className="aspect-square rounded-xl bg-rt-surfacealt/70 animate-pulse" />
             ))}
           </div>
         ) : (
@@ -52,10 +52,10 @@ export default function TableSelectorModal({ open, currentTable, onSelect, onClo
                   }}
                   className={`aspect-square rounded-xl border flex flex-col items-center justify-center gap-0.5 font-display font-semibold transition ${
                     disabled
-                      ? 'bg-rt-black/40 border-rt-border text-white/20 cursor-not-allowed'
+                      ? 'bg-rt-surfacealt/40 border-rt-border text-rt-muted/50 cursor-not-allowed'
                       : selected
                       ? 'bg-rt-orange-500 border-rt-orange-500 text-black shadow-glow'
-                      : 'bg-rt-card border-rt-border text-white hover:border-rt-orange-500/60'
+                      : 'bg-white border-rt-border text-rt-text hover:border-rt-orange-400'
                   }`}
                 >
                   <span className="text-lg">{t.number}</span>
@@ -68,7 +68,7 @@ export default function TableSelectorModal({ open, currentTable, onSelect, onClo
           </div>
         )}
 
-        <p className="text-xs text-white/30 mt-4">Tables shown greyed out are currently occupied.</p>
+        <p className="text-xs text-rt-muted mt-4">Tables shown greyed out are currently occupied.</p>
       </div>
     </div>
   );
