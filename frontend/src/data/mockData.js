@@ -43,8 +43,7 @@ export const mockProducts = {
   CAT01: [
     { pCode: '1002540', name: 'Chicken Rice Packet', price: 650.0, image: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=300&h=300&fit=crop' },
     { pCode: '1002541', name: 'Egg Rice Packet', price: 450.0, image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=300&h=300&fit=crop' },
-    { pCode: '1002549', name: 'Araliya Nadu 5Kg', price: 1150.0, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&h=300&fit=crop' }
-  ],
+    ],
   CAT02: [
     { pCode: '1002560', name: 'Chicken Fried Rice', price: 750.0, image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=300&h=300&fit=crop' },
     { pCode: '1002561', name: 'Seafood Fried Rice', price: 950.0, image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=300&h=300&fit=crop' }

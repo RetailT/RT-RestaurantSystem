@@ -56,7 +56,7 @@ export default function OrderPanel() {
   }
 
   return (
-    <aside className="w-full lg:w-[380px] shrink-0 flex flex-col gap-3 bg-white border border-rt-border rounded-2xl p-4 shadow-panel lg:sticky lg:top-4 lg:h-[calc(100vh-6rem)]">
+    <aside className="w-full lg:w-[420px] shrink-0 flex flex-col gap-3 bg-rt-charcoal/70 border border-rt-border rounded-2xl p-4 shadow-panel lg:sticky lg:top-4 lg:h-[calc(100vh-6rem)] overflow-y-auto">
       <OrderTypeToggle
         orderType={orderType}
         tableNumber={tableNumber}
