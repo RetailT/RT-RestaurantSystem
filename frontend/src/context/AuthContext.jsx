@@ -1,26 +1,55 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { loadSession, saveSession, clearSession } from '../services/authService.js';
+import { decodeJwt, isTokenExpired, getTokenRemainingMs } from '../utils/jwt.js';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [cashier, setCashier] = useState(null);
   const [ready, setReady] = useState(false);
+  const logoutTimer = useRef(null);
+
+  const signOut = useCallback(() => {
+    clearSession();
+    setCashier(null);
+    if (logoutTimer.current) {
+      clearTimeout(logoutTimer.current);
+      logoutTimer.current = null;
+    }
+  }, []);
+
+  const scheduleAutoLogout = useCallback(
+    (token) => {
+      if (logoutTimer.current) clearTimeout(logoutTimer.current);
+      const remaining = getTokenRemainingMs(token);
+      if (remaining <= 0) return;
+      logoutTimer.current = setTimeout(signOut, remaining);
+    },
+    [signOut]
+  );
 
   useEffect(() => {
     const session = loadSession();
-    if (session) setCashier(session.cashier);
+    if (session && !isTokenExpired(session.token)) {
+      setCashier(session.cashier);
+      scheduleAutoLogout(session.token);
+    } else if (session) {
+      clearSession(); // stale/expired token left over from a previous visit
+    }
     setReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function signIn({ token, cashier }) {
-    saveSession({ token, cashier });
-    setCashier(cashier);
-  }
+  // If any API call gets a 401 (token invalid/expired server-side), log out.
+  useEffect(() => {
+    window.addEventListener('auth:logout', signOut);
+    return () => window.removeEventListener('auth:logout', signOut);
+  }, [signOut]);
 
-  function signOut() {
-    clearSession();
-    setCashier(null);
+  function signIn({ token }) {
+    saveSession(token);
+    setCashier(decodeJwt(token));
+    scheduleAutoLogout(token);
   }
 
   return (

@@ -1,9 +1,6 @@
 import axios from 'axios';
 
-// Base URL points at the RTPOS backend (Node.js/Express + MSSQL) running on the
-// terminal's static IP + port. Configure this in .env as REACT_APP_API_BASE_URL.
 export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:4000/api';
-
 export const USE_MOCK_DATA = String(process.env.REACT_APP_USE_MOCK_DATA).toLowerCase() === 'true';
 
 export const TERMINAL_INFO = {
@@ -16,12 +13,9 @@ export const TERMINAL_INFO = {
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  headers: { 'Content-Type': 'application/json' }
 });
 
-// Attach the cashier session token (if the backend issues one at login)
 api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem('rtpos_token');
   if (token) {
@@ -30,13 +24,12 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Central place to react to auth failures (expired/invalid session, etc.)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
       sessionStorage.removeItem('rtpos_token');
-      sessionStorage.removeItem('rtpos_cashier');
+      window.dispatchEvent(new Event('auth:logout'));
     }
     return Promise.reject(error);
   }
