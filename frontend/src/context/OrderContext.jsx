@@ -16,6 +16,7 @@ export function OrderProvider({ children }) {
   const [tableNumber, setTableNumber] = useState(null);
   const [invoiceNo, setInvoiceNo] = useState('—');
   const [paidAmount] = useState(0);
+  const [orderNote, setOrderNote] = useState(''); // whole-order special instructions
 
   const refreshInvoiceNo = useCallback(async () => {
     try {
@@ -40,7 +41,8 @@ export function OrderProvider({ children }) {
           uPrice: product.price,
           qty: 1,
           disPercent: 0,
-          discount: 0
+          discount: 0,
+          note: ''
         }
       ];
     });
@@ -54,6 +56,10 @@ export function OrderProvider({ children }) {
     );
   }, []);
 
+  const updateNote = useCallback((pCode, note) => {
+    setItems((prev) => prev.map((i) => (i.pCode === pCode ? { ...i, note } : i)));
+  }, []);
+
   const removeItem = useCallback((pCode) => {
     setItems((prev) => prev.filter((i) => i.pCode !== pCode));
   }, []);
@@ -63,6 +69,7 @@ export function OrderProvider({ children }) {
     setOrderType(ORDER_TYPES.TAKEAWAY);
     setTableNumber(null);
     setInvoiceNo('—');
+    setOrderNote('');
   }, []);
 
   const chooseOrderType = useCallback((type) => {
@@ -77,6 +84,7 @@ export function OrderProvider({ children }) {
     items,
     addItem,
     updateQty,
+    updateNote,
     removeItem,
     clearOrder,
     orderType,
@@ -86,7 +94,9 @@ export function OrderProvider({ children }) {
     invoiceNo,
     refreshInvoiceNo,
     totals,
-    noOfPieces
+    noOfPieces,
+    orderNote,
+    setOrderNote
   };
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;

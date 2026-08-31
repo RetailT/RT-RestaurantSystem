@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useOrder, ORDER_TYPES } from '../../context/OrderContext.jsx';
 import OrderInfoHeader from './OrderInfoHeader.jsx';
 import OrderTable from './OrderTable.jsx';
@@ -8,11 +8,15 @@ import TableSelectorModal from './TableSelectorModal.jsx';
 import { submitOrder } from '../../services/orderService.js';
 import { TERMINAL_INFO } from '../../config/api.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import ItemNoteModal from './ItemNoteModal.jsx';
+
+const ORDER_NOTE_MAX_LEN = 250;
 
 export default function OrderPanel() {
   const {
     items,
     updateQty,
+    updateNote,
     removeItem,
     clearOrder,
     orderType,
@@ -21,12 +25,27 @@ export default function OrderPanel() {
     setTableNumber,
     invoiceNo,
     totals,
-    noOfPieces
+    noOfPieces,
+    orderNote,
+    setOrderNote
   } = useOrder();
   const { cashier } = useAuth();
   const [tableModalOpen, setTableModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [noteItem, setNoteItem] = useState(null);
+
+  // Clear the "order sent" / error feedback as soon as the customer starts
+  // building a new order (i.e. an item gets added, so the count goes up).
+  // We only react to increases — removing an item or clearOrder() emptying
+  // the list to 0 shouldn't wipe the message the cashier is still reading.
+  const prevItemCount = useRef(items.length);
+  useEffect(() => {
+    if (items.length > prevItemCount.current) {
+      setFeedback('');
+    }
+    prevItemCount.current = items.length;
+  }, [items.length]);
 
   const canSubmit =
     items.length > 0 && !(orderType === ORDER_TYPES.DINE_IN && !tableNumber) && !submitting;
@@ -44,7 +63,8 @@ export default function OrderPanel() {
         orderType,
         tableNumber: orderType === ORDER_TYPES.DINE_IN ? tableNumber : null,
         items,
-        totals
+        totals,
+        orderNote: orderNote.trim() || null
       });
       setFeedback('Order sent to the kitchen.');
       clearOrder();
@@ -75,7 +95,31 @@ export default function OrderPanel() {
 
       <OrderInfoHeader />
 
-      <OrderTable items={items} onUpdateQty={updateQty} onRemove={removeItem} />
+      <OrderTable
+        items={items}
+        onUpdateQty={updateQty}
+        onRemove={removeItem}
+        onEditNote={setNoteItem}
+      />
+
+      {/* Whole-order special instructions, separate from per-item notes */}
+      <div className="bg-rt-surfacealt/50 border border-rt-border rounded-xl px-3 py-2">
+        <div className="flex items-center justify-between mb-1">
+          <label htmlFor="order-note" className="text-[10px] uppercase tracking-wide font-semibold text-rt-orange-600">
+            Special comment for this order
+          </label>
+          <span className="text-[10px] text-rt-muted">{orderNote.length}/{ORDER_NOTE_MAX_LEN}</span>
+        </div>
+        <textarea
+          id="order-note"
+          value={orderNote}
+          onChange={(e) => setOrderNote(e.target.value.slice(0, ORDER_NOTE_MAX_LEN))}
+          placeholder="e.g. call before delivery, pack separately, no plastic bags…"
+          rows={2}
+          maxLength={ORDER_NOTE_MAX_LEN}
+          className="w-full rounded-lg bg-rt-surface border border-rt-border text-rt-text placeholder:text-rt-muted/70 px-3 py-2 text-xs focus:border-rt-orange-500 outline-none resize-none"
+        />
+      </div>
 
       <OrderSummary totals={totals} noOfProducts={items.length} noOfPieces={noOfPieces} />
 
@@ -98,6 +142,12 @@ export default function OrderPanel() {
         currentTable={tableNumber}
         onSelect={setTableNumber}
         onClose={() => setTableModalOpen(false)}
+      />
+
+      <ItemNoteModal
+        item={noteItem}
+        onSave={updateNote}
+        onClose={() => setNoteItem(null)}
       />
     </aside>
   );

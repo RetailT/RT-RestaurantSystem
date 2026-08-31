@@ -4,11 +4,6 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Expected real endpoint: GET /invoices/next?unitNo=1
- * Returns the next running invoice number from the POS so numbering
- * stays in sync with the till, e.g. { invoiceNo: '1000000009' }
- */
 export async function getNextInvoiceNo(unitNo) {
   if (USE_MOCK_DATA) {
     await delay(150);
@@ -24,8 +19,9 @@ export async function getNextInvoiceNo(unitNo) {
  * Body: {
  *   companyCode, cashierCode, unitNo, invoiceNo,
  *   orderType: 'TAKEAWAY' | 'DINE_IN', tableNumber,
- *   items: [{ pCode, description, uPrice, qty, disPercent, discount, amount }],
- *   totals: { total, totalDiscount, netTotal, paidAmount, balance }
+ *   items: [{ pCode, description, uPrice, qty, disPercent, discount, amount, note }],
+ *   totals: { total, totalDiscount, netTotal, paidAmount, balance },
+ *   orderNote: string | null   // whole-order special instructions (separate from per-item note)
  * }
  */
 export async function submitOrder(orderPayload) {
