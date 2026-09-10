@@ -50,30 +50,24 @@ export default function OrderPanel() {
   const canSubmit =
     items.length > 0 && !(orderType === ORDER_TYPES.DINE_IN && !tableNumber) && !submitting;
 
-  async function handlePlaceOrder() {
-    if (!canSubmit) return;
-    setSubmitting(true);
-    setFeedback('');
-    try {
-      await submitOrder({
-        companyCode: TERMINAL_INFO.companyCode,
-        cashierCode: cashier?.cashierCode,
-        unitNo: TERMINAL_INFO.unitNo,
-        invoiceNo,
-        orderType,
-        tableNumber: orderType === ORDER_TYPES.DINE_IN ? tableNumber : null,
-        items,
-        totals,
-        orderNote: orderNote.trim() || null
-      });
-      setFeedback('Order sent to the kitchen.');
-      clearOrder();
-    } catch (err) {
-      setFeedback(err?.response?.data?.message || 'Could not send the order. Try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  }
+      async function handlePlaceOrder() {
+        if (!canSubmit) return;
+        setSubmitting(true);
+        setFeedback('');
+        try {
+          await submitOrder({
+            companyCode: TERMINAL_INFO.companyCode,
+            unitNo: TERMINAL_INFO.unitNo,
+            orderNote: orderNote.trim() || null
+          });
+          setFeedback('Order sent to the kitchen.');
+          clearOrder();
+        } catch (err) {
+          setFeedback(err?.response?.data?.message || 'Could not send the order. Try again.');
+        } finally {
+          setSubmitting(false);
+        }
+      }
 
   return (
     <aside className="w-full lg:w-[420px] shrink-0 flex flex-col gap-3 bg-rt-charcoal/70 border border-rt-border rounded-2xl p-4 shadow-panel lg:sticky lg:top-4 lg:h-[calc(100vh-6rem)] overflow-y-auto">

@@ -10,7 +10,7 @@ export default function ItemNoteModal({ item, onSave, onClose }) {
   if (!item) return null;
 
   function handleSave() {
-    onSave(item.pCode, text.trim());
+    onSave(item.idx, text.trim());
     onClose();
   }
 

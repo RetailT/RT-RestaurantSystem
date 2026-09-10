@@ -1,6 +1,14 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { calculateTotals } from '../utils/format.js';
 import { getNextInvoiceNo } from '../services/orderService.js';
+import {
+  fetchCart,
+  addCartItem,
+  updateCartItem,
+  removeCartItem,
+  updateCartType,
+  updateCartComment
+} from '../services/cartService.js';
 import { TERMINAL_INFO } from '../config/api.js';
 
 const OrderContext = createContext(null);
@@ -10,13 +18,75 @@ export const ORDER_TYPES = {
   DINE_IN: 'DINE_IN'
 };
 
+const COMMENT_DEBOUNCE_MS = 600;
+
+function mapServerItem(row) {
+  return {
+    idx: row.idx,
+    pCode: row.pCode,
+    description: row.name,
+    uPrice: row.unitPrice,
+    qty: row.qty,
+    disPercent: row.discPercent,
+    discount: row.discount,
+    note: row.note || ''
+  };
+}
+
 export function OrderProvider({ children }) {
   const [items, setItems] = useState([]);
   const [orderType, setOrderType] = useState(ORDER_TYPES.TAKEAWAY);
   const [tableNumber, setTableNumber] = useState(null);
   const [invoiceNo, setInvoiceNo] = useState('—');
   const [paidAmount] = useState(0);
-  const [orderNote, setOrderNote] = useState(''); // whole-order special instructions
+  const [orderNote, setOrderNoteState] = useState('');
+
+  const cartContext = { companyCode: TERMINAL_INFO.companyCode, unitNo: TERMINAL_INFO.unitNo };
+
+  // Skips the very first debounce fire right after a server refresh sets
+  // orderNote from fetched data — otherwise every refreshCart() would
+  // immediately PATCH the same value straight back.
+  const skipNextCommentSync = useRef(false);
+  const commentTimerRef = useRef(null);
+
+  const refreshCart = useCallback(async () => {
+    try {
+      const { items: rows, orderComment } = await fetchCart(cartContext);
+      setItems(rows.map(mapServerItem));
+      skipNextCommentSync.current = true;
+      setOrderNoteState(orderComment || '');
+    } catch {
+      // leave current state if the cart can't be reached
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    refreshCart();
+  }, [refreshCart]);
+
+  // Debounced live-save of the whole-order comment to tb_SUSPENDTEMP as the
+  // cashier types. Only fires once there's at least one cart row to attach it to.
+  useEffect(() => {
+    if (commentTimerRef.current) clearTimeout(commentTimerRef.current);
+
+    if (skipNextCommentSync.current) {
+      skipNextCommentSync.current = false;
+      return;
+    }
+    if (items.length === 0) return;
+
+    commentTimerRef.current = setTimeout(() => {
+      updateCartComment({ ...cartContext, comment: orderNote.trim() || null }).catch(() => {});
+    }, COMMENT_DEBOUNCE_MS);
+
+    return () => clearTimeout(commentTimerRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderNote, items.length]);
+
+  const setOrderNote = useCallback((value) => {
+    setOrderNoteState(value);
+  }, []);
 
   const refreshInvoiceNo = useCallback(async () => {
     try {
@@ -27,55 +97,119 @@ export function OrderProvider({ children }) {
     }
   }, []);
 
-  const addItem = useCallback((product) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.pCode === product.pCode);
-      if (existing) {
-        return prev.map((i) => (i.pCode === product.pCode ? { ...i, qty: i.qty + 1 } : i));
-      }
-      return [
-        ...prev,
-        {
-          pCode: product.pCode,
-          description: product.name,
-          uPrice: product.price,
-          qty: 1,
-          disPercent: 0,
-          discount: 0,
-          note: ''
+  const addItem = useCallback(
+    async (product) => {
+      const existing = items.find((i) => i.pCode === product.pCode && !i.note);
+      try {
+        if (existing) {
+          await updateCartItem(existing.idx, { qty: existing.qty + 1 });
+        } else {
+          await addCartItem({
+            ...cartContext,
+            pCode: product.pCode,
+            uPrice: product.price,
+            qty: 1,
+            disPercent: 0,
+            orderType,
+            tableNumber
+          });
         }
-      ];
-    });
-  }, []);
+        await refreshCart();
+      } catch {
+        // swallow — cart stays as last known server state, cashier can retry the tap
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, orderType, tableNumber]
+  );
 
-  const updateQty = useCallback((pCode, qty) => {
-    setItems((prev) =>
-      prev
-        .map((i) => (i.pCode === pCode ? { ...i, qty: Math.max(qty, 0) } : i))
-        .filter((i) => i.qty > 0)
-    );
-  }, []);
+  const updateQty = useCallback(
+    async (idx, qty) => {
+      try {
+        if (qty <= 0) {
+          await removeCartItem(idx);
+        } else {
+          await updateCartItem(idx, { qty });
+        }
+        await refreshCart();
+      } catch {
+        // no-op — refreshCart on next mutation will reconcile
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
-  const updateNote = useCallback((pCode, note) => {
-    setItems((prev) => prev.map((i) => (i.pCode === pCode ? { ...i, note } : i)));
-  }, []);
+  const updateNote = useCallback(
+    async (idx, note) => {
+      try {
+        await updateCartItem(idx, { note });
+        await refreshCart();
+      } catch {
+        // no-op
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
-  const removeItem = useCallback((pCode) => {
-    setItems((prev) => prev.filter((i) => i.pCode !== pCode));
-  }, []);
+  const removeItem = useCallback(
+    async (idx) => {
+      try {
+        await removeCartItem(idx);
+        await refreshCart();
+      } catch {
+        // no-op
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
+  // Local-only reset after a successful submit — the backend has already
+  // moved and cleared the tb_SUSPENDTEMP rows by that point.
   const clearOrder = useCallback(() => {
     setItems([]);
     setOrderType(ORDER_TYPES.TAKEAWAY);
     setTableNumber(null);
     setInvoiceNo('—');
-    setOrderNote('');
+    skipNextCommentSync.current = true;
+    setOrderNoteState('');
   }, []);
 
-  const chooseOrderType = useCallback((type) => {
-    setOrderType(type);
-    if (type === ORDER_TYPES.TAKEAWAY) setTableNumber(null);
-  }, []);
+  const chooseOrderType = useCallback(
+    async (type) => {
+      setOrderType(type);
+      const nextTable = type === ORDER_TYPES.TAKEAWAY ? null : tableNumber;
+      if (type === ORDER_TYPES.TAKEAWAY) setTableNumber(null);
+      if (items.length > 0) {
+        try {
+          await updateCartType({ ...cartContext, orderType: type, tableNumber: nextTable });
+          await refreshCart();
+        } catch {
+          // no-op
+        }
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items.length, tableNumber]
+  );
+
+  const chooseTable = useCallback(
+    async (num) => {
+      setTableNumber(num);
+      if (items.length > 0) {
+        try {
+          await updateCartType({ ...cartContext, orderType: ORDER_TYPES.DINE_IN, tableNumber: num });
+          await refreshCart();
+        } catch {
+          // no-op
+        }
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items.length]
+  );
 
   const totals = useMemo(() => calculateTotals(items, paidAmount), [items, paidAmount]);
   const noOfPieces = useMemo(() => items.reduce((sum, i) => sum + i.qty, 0), [items]);
@@ -87,10 +221,11 @@ export function OrderProvider({ children }) {
     updateNote,
     removeItem,
     clearOrder,
+    refreshCart,
     orderType,
     chooseOrderType,
     tableNumber,
-    setTableNumber,
+    setTableNumber: chooseTable,
     invoiceNo,
     refreshInvoiceNo,
     totals,

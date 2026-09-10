@@ -15,20 +15,15 @@ export async function getNextInvoiceNo(unitNo) {
 }
 
 /**
- * Expected real endpoint: POST /orders
- * Body: {
- *   companyCode, cashierCode, unitNo, invoiceNo,
- *   orderType: 'TAKEAWAY' | 'DINE_IN', tableNumber,
- *   items: [{ pCode, description, uPrice, qty, disPercent, discount, amount, note }],
- *   totals: { total, totalDiscount, netTotal, paidAmount, balance },
- *   orderNote: string | null   // whole-order special instructions (separate from per-item note)
- * }
+ * Real endpoint: POST /orders — the backend moves the cashier's current
+ * tb_SUSPENDTEMP rows into tb_SUSPEND. No items/totals need to be sent;
+ * the cart is already persisted server-side.
  */
-export async function submitOrder(orderPayload) {
+export async function submitOrder({ companyCode, unitNo, orderNote }) {
   if (USE_MOCK_DATA) {
     await delay(500);
-    return { success: true, invoiceNo: orderPayload.invoiceNo };
+    return { success: true };
   }
-  const { data } = await api.post('/orders', orderPayload);
+  const { data } = await api.post('/orders', { companyCode, unitNo, orderNote });
   return data;
 }
