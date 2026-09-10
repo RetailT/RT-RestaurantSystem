@@ -22,17 +22,30 @@ const getNextInvoice = asyncHandler(async (req, res) => {
   res.json({ invoiceNo: row ? String(row.INVOICENO) : null });
 });
 
+// POST /orders — moves the cashier's current tb_SUSPENDTEMP cart into tb_SUSPEND
 const submitOrder = asyncHandler(async (req, res) => {
-  const { cashierCode, unitNo, orderType, tableNumber, items, orderNote } = req.body;
-
+  const cashierCode = req.cashier.cashierCode;
   const companyCode = req.body.companyCode || DEFAULT_COMPANY_CODE;
-  const resolvedUnitNo = Number(unitNo) || DEFAULT_UNITNO;
-
-  if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ message: 'Order must include at least one item.' });
-  }
+  const unitNo = Number(req.body.unitNo) || DEFAULT_UNITNO;
+  const orderNote = req.body.orderNote || null;
 
   const pool = await getPool();
+
+  const countResult = await pool
+    .request()
+    .input('companyCode', sql.VarChar, companyCode)
+    .input('unitNo', sql.VarChar, String(unitNo))
+    .input('cashierCode', sql.VarChar, cashierCode)
+    .query(`
+      SELECT COUNT(*) AS itemCount
+      FROM tb_SUSPENDTEMP
+      WHERE COMPANY_CODE = @companyCode AND UNITNO = @unitNo AND CASHIERCODE = @cashierCode
+    `);
+
+  if (countResult.recordset[0].itemCount === 0) {
+    return res.status(400).json({ message: 'Cart is empty — add items before sending the order.' });
+  }
+
   const transaction = new sql.Transaction(pool);
 
   try {
@@ -41,7 +54,7 @@ const submitOrder = asyncHandler(async (req, res) => {
     const lockRequest = new sql.Request(transaction);
     const posMainResult = await lockRequest
       .input('companyCode', sql.VarChar, companyCode)
-      .input('unitNo', sql.Int, resolvedUnitNo)
+      .input('unitNo', sql.Int, unitNo)
       .query(`
         SELECT SUSPENDNO
         FROM tb_POSMAIN WITH (UPDLOCK, HOLDLOCK)
@@ -61,7 +74,7 @@ const submitOrder = asyncHandler(async (req, res) => {
     const updateRequest = new sql.Request(transaction);
     await updateRequest
       .input('companyCode', sql.VarChar, companyCode)
-      .input('unitNo', sql.Int, resolvedUnitNo)
+      .input('unitNo', sql.Int, unitNo)
       .input('suspendNo', sql.Int, newSuspendNo)
       .query(`
         UPDATE tb_POSMAIN
@@ -69,66 +82,46 @@ const submitOrder = asyncHandler(async (req, res) => {
         WHERE COMPANY_CODE = @companyCode AND UNITNO = @unitNo
       `);
 
-    const productCodes = [...new Set(items.map((i) => i.pCode))];
-    const productRequest = new sql.Request(transaction);
-    const productResult = await productRequest.query(`
-      SELECT PRODUCT_CODE, PRODUCT_NAME_SINHALA, COST_PRICE, AVGCOST
-      FROM tb_PRODUCT
-      WHERE PRODUCT_CODE IN (${productCodes.map((c) => `'${c.replace(/'/g, "''")}'`).join(',')})
-    `);
-    const productByCode = new Map(productResult.recordset.map((r) => [r.PRODUCT_CODE, r]));
+    const moveRequest = new sql.Request(transaction);
+    await moveRequest
+      .input('companyCode', sql.VarChar, companyCode)
+      .input('unitNo', sql.VarChar, String(unitNo))
+      .input('cashierCode', sql.VarChar, cashierCode)
+      .input('suspendNo', sql.Char(15), String(newSuspendNo))
+      .input('orderComment', sql.NVarChar, orderNote)
+      .query(`
+        INSERT INTO tb_SUSPEND (
+          INVOICENO, SUSPENDNO, COMPANY_CODE, UNITNO, UNIT, CASHIERCODE, SALESMAN,
+          [DATE], [TIME], PRODUCT_CODE, PRODUCT_NAME, PRODUCT_NAME_SINHALA,
+          COST_PRICE, AVGCOST, UNIT_PRICE, QTY, DISCPREC, DISCOUNT, AMOUNT,
+          ID, BALANCE, BANKID, RECORDNO, RECORD_INSERTED, UPDATECASHIER,
+          TYPE, EXPDATE, BTYPE, EDITPRICE, REFCODE, DISCOUNT_TYPE, SERIALNO,
+          COLORCODE, SIZECODE, PROMOCHK, PROMODISC, CARDNO, ORDERNO, UNIT_PRICE2,
+          WASTAGE, ISSUE_LOCATION, PRINTED, TAKEDINE_STATUS, TABLEID, COMMENTS,
+          ORDER_NOTE, INSERT_TIME
+        )
+        SELECT
+          NULL, @suspendNo, COMPANY_CODE, UNITNO, UNIT, CASHIERCODE, SALESMAN,
+          GETDATE(), GETDATE(), PRODUCT_CODE, PRODUCT_NAME, PRODUCT_NAME_SINHALA,
+          COST_PRICE, AVGCOST, UNIT_PRICE, QTY, DISCPREC, DISCOUNT, AMOUNT,
+          ID, BALANCE, BANKID, RECORDNO, RECORD_INSERTED, UPDATECASHIER,
+          TYPE, EXPDATE, BTYPE, EDITPRICE, REFCODE, DISCOUNT_TYPE, SERIALNO,
+          COLORCODE, SIZECODE, PROMOCHK, PROMODISC, CARDNO, ORDERNO, UNIT_PRICE2,
+          WASTAGE, ISSUE_LOCATION, PRINTED, TAKEDINE_STATUS, TABLEID, @orderComment,
+          ORDER_NOTE, GETDATE()
+        FROM tb_SUSPENDTEMP
+        WHERE COMPANY_CODE = @companyCode AND UNITNO = @unitNo AND CASHIERCODE = @cashierCode
+      `);
 
-    const takedineStatus = orderType === 'DINE_IN' ? 'DINEIN' : 'TAKEAWAY';
-    const tableId = orderType === 'DINE_IN' ? tableNumber : null;
-
-    let orderNo = 1;
-    for (const item of items) {
-      const product = productByCode.get(item.pCode) || {};
-      const grossAmount = Number(item.uPrice) * Number(item.qty);
-      const discount = Number(item.discount) || (grossAmount * (Number(item.disPercent) || 0)) / 100;
-      const amount = grossAmount - discount;
-
-      const itemRequest = new sql.Request(transaction);
-      await itemRequest
-        .input('invoiceNo', sql.VarChar, null)
-        .input('suspendNo', sql.Int, newSuspendNo)
-        .input('companyCode', sql.VarChar, companyCode)
-        .input('unitNo', sql.Int, resolvedUnitNo)
-        .input('unit', sql.VarChar, String(resolvedUnitNo))
-        .input('cashierCode', sql.VarChar, cashierCode)
-        .input('productCode', sql.VarChar, item.pCode)
-        .input('productName', sql.VarChar, item.description)
-        .input('productNameSinhala', sql.NVarChar, product.PRODUCT_NAME_SINHALA || null)
-        .input('costPrice', sql.Decimal(18, 2), product.COST_PRICE || 0)
-        .input('avgCost', sql.Decimal(18, 2), product.AVGCOST || 0)
-        .input('unitPrice', sql.Decimal(18, 2), item.uPrice)
-        .input('qty', sql.Decimal(18, 3), item.qty)
-        .input('discPrec', sql.Decimal(9, 2), item.disPercent || 0)
-        .input('discount', sql.Decimal(18, 2), discount)
-        .input('amount', sql.Decimal(18, 2), amount)
-        .input('orderNo', sql.Int, orderNo)
-        .input('takedineStatus', sql.VarChar, takedineStatus)
-        .input('tableId', sql.Int, tableId)
-        // CHANGED: whole-order special comment now goes to COMMENTS
-        .input('comments', sql.NVarChar, orderNote || null)
-        // CHANGED: per-item "+ Add note" now goes to ORDER_NOTE
-        .input('orderNote', sql.NVarChar, item.note || null)
-        .query(`
-          INSERT INTO tb_SUSPEND (
-            INVOICENO, SUSPENDNO, COMPANY_CODE, UNITNO, UNIT, CASHIERCODE,
-            [DATE], [TIME], PRODUCT_CODE, PRODUCT_NAME, PRODUCT_NAME_SINHALA,
-            COST_PRICE, AVGCOST, UNIT_PRICE, QTY, DISCPREC, DISCOUNT, AMOUNT,
-            ORDERNO, TAKEDINE_STATUS, TABLEID, COMMENTS, ORDER_NOTE, INSERT_TIME
-          ) VALUES (
-            @invoiceNo, @suspendNo, @companyCode, @unitNo, @unit, @cashierCode,
-            CONVERT(date, GETDATE()), CONVERT(time, GETDATE()), @productCode, @productName, @productNameSinhala,
-            @costPrice, @avgCost, @unitPrice, @qty, @discPrec, @discount, @amount,
-            @orderNo, @takedineStatus, @tableId, @comments, @orderNote, GETDATE()
-          )
-        `);
-
-      orderNo += 1;
-    }
+    const clearRequest = new sql.Request(transaction);
+    await clearRequest
+      .input('companyCode', sql.VarChar, companyCode)
+      .input('unitNo', sql.VarChar, String(unitNo))
+      .input('cashierCode', sql.VarChar, cashierCode)
+      .query(`
+        DELETE FROM tb_SUSPENDTEMP
+        WHERE COMPANY_CODE = @companyCode AND UNITNO = @unitNo AND CASHIERCODE = @cashierCode
+      `);
 
     await transaction.commit();
     res.json({ success: true, suspendNo: newSuspendNo });
