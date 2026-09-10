@@ -10,6 +10,8 @@ import {
   updateCartComment
 } from '../services/cartService.js';
 import { TERMINAL_INFO } from '../config/api.js';
+// CHANGED: needed to know whether a cashier is actually logged in yet
+import { useAuth } from './AuthContext.jsx';
 
 const OrderContext = createContext(null);
 
@@ -34,6 +36,9 @@ function mapServerItem(row) {
 }
 
 export function OrderProvider({ children }) {
+  // CHANGED: added
+  const { isAuthenticated } = useAuth();
+
   const [items, setItems] = useState([]);
   const [orderType, setOrderType] = useState(ORDER_TYPES.TAKEAWAY);
   const [tableNumber, setTableNumber] = useState(null);
@@ -43,9 +48,6 @@ export function OrderProvider({ children }) {
 
   const cartContext = { companyCode: TERMINAL_INFO.companyCode, unitNo: TERMINAL_INFO.unitNo };
 
-  // Skips the very first debounce fire right after a server refresh sets
-  // orderNote from fetched data — otherwise every refreshCart() would
-  // immediately PATCH the same value straight back.
   const skipNextCommentSync = useRef(false);
   const commentTimerRef = useRef(null);
 
@@ -61,12 +63,14 @@ export function OrderProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // CHANGED: only fetch the cart once a cashier is actually signed in —
+  // this used to fire unconditionally on mount, which meant it ran on the
+  // login page itself (no token yet) and always got a 401 from the backend.
   useEffect(() => {
+    if (!isAuthenticated) return;
     refreshCart();
-  }, [refreshCart]);
+  }, [isAuthenticated, refreshCart]);
 
-  // Debounced live-save of the whole-order comment to tb_SUSPENDTEMP as the
-  // cashier types. Only fires once there's at least one cart row to attach it to.
   useEffect(() => {
     if (commentTimerRef.current) clearTimeout(commentTimerRef.current);
 
@@ -166,8 +170,6 @@ export function OrderProvider({ children }) {
     []
   );
 
-  // Local-only reset after a successful submit — the backend has already
-  // moved and cleared the tb_SUSPENDTEMP rows by that point.
   const clearOrder = useCallback(() => {
     setItems([]);
     setOrderType(ORDER_TYPES.TAKEAWAY);
