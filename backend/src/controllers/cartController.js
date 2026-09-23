@@ -85,7 +85,7 @@ const addItem = asyncHandler(async (req, res) => {
   const amount = grossAmount - discount;
 
   const takedineStatus = orderType === 'DINE_IN' ? 'DINEIN' : 'TAKEAWAY';
-  const tableId = orderType === 'DINE_IN' ? String(tableNumber) : null;
+  const tableId = orderType === 'DINE_IN' ? String(tableNumber) : '';
 
   // carry over the whole-order comment already on the cart (if any) onto the new row
   const existingCommentResult = await pool
@@ -98,7 +98,7 @@ const addItem = asyncHandler(async (req, res) => {
       FROM tb_SUSPENDTEMP
       WHERE COMPANY_CODE = @companyCode AND UNITNO = @unitNo AND CASHIERCODE = @cashierCode
     `);
-  const carriedComment = existingCommentResult.recordset[0]?.COMMENTS || null;
+  const carriedComment = existingCommentResult.recordset[0]?.COMMENTS || '';
 
   const orderNoResult = await pool
     .request()
@@ -122,7 +122,7 @@ const addItem = asyncHandler(async (req, res) => {
     .input('cashierCode', sql.VarChar, cashierCode)
     .input('productCode', sql.VarChar, product.PRODUCT_CODE)
     .input('productName', sql.NVarChar, product.PRODUCT_NAME)
-    .input('productNameSinhala', sql.NVarChar, product.PRODUCT_NAME_SINHALA || null)
+    .input('productNameSinhala', sql.NVarChar, product.PRODUCT_NAME_SINHALA || '')
     .input('costPrice', sql.Money, product.COST_PRICE || 0)
     .input('avgCost', sql.Money, product.AVGCOST || 0)
     .input('unitPrice', sql.Money, unitPrice)
@@ -133,7 +133,7 @@ const addItem = asyncHandler(async (req, res) => {
     .input('orderNo', sql.NVarChar, String(nextOrderNo))
     .input('takedineStatus', sql.NVarChar, takedineStatus)
     .input('tableId', sql.NVarChar, tableId)
-    .input('orderNote', sql.NVarChar, note || null)
+    .input('orderNote', sql.NVarChar, note || '')
     .input('comment', sql.NVarChar, carriedComment)
     .query(`
       INSERT INTO tb_SUSPENDTEMP (
@@ -191,7 +191,7 @@ const updateItem = asyncHandler(async (req, res) => {
     .input('discPrec', sql.Money, newDiscPercent)
     .input('discount', sql.Money, newDiscount)
     .input('amount', sql.Money, newAmount)
-    .input('orderNote', sql.NVarChar, note !== undefined ? note : null)
+    .input('orderNote', sql.NVarChar, note !== undefined ? (note || '') : null)
     .query(`
       UPDATE tb_SUSPENDTEMP
       SET QTY = @qty, DISCPREC = @discPrec, DISCOUNT = @discount, AMOUNT = @amount,
@@ -230,7 +230,7 @@ const updateCartType = asyncHandler(async (req, res) => {
   const { orderType, tableNumber } = req.body;
 
   const takedineStatus = orderType === 'DINE_IN' ? 'DINEIN' : 'TAKEAWAY';
-  const tableId = orderType === 'DINE_IN' ? String(tableNumber || '') : null;
+  const tableId = orderType === 'DINE_IN' ? String(tableNumber || '') : '';
 
   const pool = await getPool();
   await pool
@@ -260,7 +260,7 @@ const updateCartComment = asyncHandler(async (req, res) => {
     .input('companyCode', sql.VarChar, companyCode)
     .input('unitNo', sql.VarChar, String(unitNo))
     .input('cashierCode', sql.VarChar, cashierCode)
-    .input('comment', sql.NVarChar, comment || null)
+    .input('comment', sql.NVarChar, comment || '')
     .query(`
       UPDATE tb_SUSPENDTEMP
       SET COMMENTS = @comment

@@ -19,7 +19,7 @@ const getNextInvoice = asyncHandler(async (req, res) => {
     `);
 
   const row = result.recordset[0];
-  res.json({ invoiceNo: row ? String(row.INVOICENO) : null });
+  res.json({ invoiceNo: row ? String(row.INVOICENO) : '' });
 });
 
 // POST /orders — moves the cashier's current tb_SUSPENDTEMP cart into tb_SUSPEND
@@ -27,7 +27,7 @@ const submitOrder = asyncHandler(async (req, res) => {
   const cashierCode = req.cashier.cashierCode;
   const companyCode = req.body.companyCode || DEFAULT_COMPANY_CODE;
   const unitNo = Number(req.body.unitNo) || DEFAULT_UNITNO;
-  const orderNote = req.body.orderNote || null;
+  const orderNote = req.body.orderNote || '';
 
   const pool = await getPool();
 
@@ -89,6 +89,7 @@ const submitOrder = asyncHandler(async (req, res) => {
       .input('cashierCode', sql.VarChar, cashierCode)
       .input('suspendNo', sql.Char(15), String(newSuspendNo))
       .input('orderComment', sql.NVarChar, orderNote)
+      .input('invoiceNo', sql.VarChar, '')
       .query(`
         INSERT INTO tb_SUSPEND (
           INVOICENO, SUSPENDNO, COMPANY_CODE, UNITNO, UNIT, CASHIERCODE, SALESMAN,
@@ -101,7 +102,7 @@ const submitOrder = asyncHandler(async (req, res) => {
           ORDER_NOTE, INSERT_TIME
         )
         SELECT
-          NULL, @suspendNo, COMPANY_CODE, UNITNO, UNIT, CASHIERCODE, SALESMAN,
+          @invoiceNo, @suspendNo, COMPANY_CODE, UNITNO, UNIT, CASHIERCODE, SALESMAN,
           GETDATE(), GETDATE(), PRODUCT_CODE, PRODUCT_NAME, PRODUCT_NAME_SINHALA,
           COST_PRICE, AVGCOST, UNIT_PRICE, QTY, DISCPREC, DISCOUNT, AMOUNT,
           ID, BALANCE, BANKID, RECORDNO, RECORD_INSERTED, UPDATECASHIER,
